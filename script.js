@@ -1,166 +1,149 @@
 const canvas = document.getElementById('chessBoard');
-const context = canvas.getContext('2d');
-
+const ctx = canvas.getContext('2d');
+const tileSize = 100;
 const boardSize = 5;
-const tileSize = canvas.width / boardSize;
-
-const images = {};
-const pieceTypes = ['rook', 'knight', 'bishop', 'queen', 'king', 'pawn'];
-const colors = ['white', 'black'];
-
-function loadImages() {
-    let loaded = 0;
-    const total = pieceTypes.length * colors.length + 1; // +1 for the board
-
-    return new Promise((resolve) => {
-        colors.forEach(color => {
-            pieceTypes.forEach(type => {
-                const img = new Image();
-                img.src = `assets/${color}_${type}.png`;
-                img.onload = () => {
-                    images[`${color}_${type}`] = img;
-                    if (++loaded === total) {
-                        resolve();
-                    }
-                };
-            });
-        });
-
-        const boardImg = new Image();
-        boardImg.src = 'assets/board.png';
-        boardImg.onload = () => {
-            images.board = boardImg;
-            if (++loaded === total) {
-                resolve();
-            }
-        };
-    });
-}
+canvas.width = tileSize * boardSize;
+canvas.height = tileSize * boardSize;
 
 const initialBoard = [
-    ['white_rook', 'white_pawn', null, 'black_pawn', 'black_rook'],
-    ['white_knight', 'white_pawn', null, 'black_pawn', 'black_knight'],
-    ['white_bishop', 'white_pawn', null, 'black_pawn', 'black_bishop'],
-    ['white_queen', 'white_pawn', null, 'black_pawn', 'black_queen'],
-    ['white_king', 'white_pawn', null, 'black_pawn', 'black_king']
+    ['white_rook', null, null, null, 'black_rook'],
+    ['white_knight', null, null, null, 'black_knight'],
+    ['white_bishop', null, null, null, 'black_bishop'],
+    ['white_queen', null, null, null, 'black_queen'],
+    ['white_king', null, null, null, 'black_king']
 ];
 
 let board = JSON.parse(JSON.stringify(initialBoard));
 let selectedPiece = null;
 let validMoves = [];
 
-function drawBoard() {
-    context.drawImage(images.board, 0, 0, canvas.width, canvas.height);
+const images = {};
+const pieces = ['white_rook', 'white_knight', 'white_bishop', 'white_queen', 'white_king', 'white_pawn',
+                'black_rook', 'black_knight', 'black_bishop', 'black_queen', 'black_king', 'black_pawn'];
+
+const loadImages = () => {
+    return Promise.all(pieces.map(piece => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = `assets/${piece}.png`;
+            img.onload = () => {
+                images[piece] = img;
+                resolve();
+            };
+            img.onerror = reject;
+        });
+    }));
+};
+
+const drawBoard = () => {
     for (let row = 0; row < boardSize; row++) {
         for (let col = 0; col < boardSize; col++) {
-            const piece = board[row][col];
-            if (piece) {
-                context.drawImage(images[piece], col * tileSize, row * tileSize, tileSize, tileSize);
+            ctx.fillStyle = (row + col) % 2 === 0 ? '#f0d9b5' : '#b58863';
+            ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+            if (board[row][col]) {
+                ctx.drawImage(images[board[row][col]], col * tileSize, row * tileSize, tileSize, tileSize);
             }
         }
     }
-    validMoves.forEach(([row, col]) => {
-        context.strokeStyle = 'green';
-        context.lineWidth = 3;
-        context.strokeRect(col * tileSize, row * tileSize, tileSize, tileSize);
-    });
-}
 
-function getPiece(row, col) {
+    // 유효한 이동 경로 표시
+    if (validMoves.length > 0) {
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+        validMoves.forEach(([row, col]) => {
+            ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+        });
+    }
+};
+
+const getPiece = (row, col) => {
     return board[row][col];
-}
+};
 
-function getValidMoves(row, col) {
-    const piece = getPiece(row, col);
-    if (!piece) return [];
+const getValidMoves = (row, col) => {
+    const piece = board[row][col];
+    const color = piece.split('_')[0];
+    const type = piece.split('_')[1];
+    const directions = {
+        'rook': [[-1, 0], [1, 0], [0, -1], [0, 1]],
+        'bishop': [[-1, -1], [-1, 1], [1, -1], [1, 1]],
+        'queen': [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]],
+        'king': [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]],
+        'knight': [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]],
+        'pawn': (color === 'white') ? [[0, 1], [1, 1], [-1, 1]] : [[0, -1], [1, -1], [-1, -1]]
+    };
 
-    const [color, type] = piece.split('_');
-    let moves = [];
-    if (type === 'rook') {
-        moves = getRookMoves(row, col, color);
-    } else if (type === 'knight') {
-        moves = getKnightMoves(row, col, color);
-    } else if (type === 'bishop') {
-        moves = getBishopMoves(row, col, color);
-    } else if (type === 'queen') {
-        moves = getQueenMoves(row, col, color);
-    } else if (type === 'king') {
-        moves = getKingMoves(row, col, color);
-    } else if (type === 'pawn') {
-        moves = getPawnMoves(row, col, color);
-    }
-    return moves;
-}
-
-function getRookMoves(row, col, color) {
-    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-    return getStraightMoves(row, col, directions);
-}
-
-function getKnightMoves(row, col, color) {
-    const moves = [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]];
-    return getValidMovesFromOffsets(row, col, moves);
-}
-
-function getBishopMoves(row, col, color) {
-    const directions = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
-    return getStraightMoves(row, col, directions);
-}
-
-function getQueenMoves(row, col, color) {
-    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-    return getStraightMoves(row, col, directions);
-}
-
-function getKingMoves(row, col, color) {
-    const moves = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-    return getValidMovesFromOffsets(row, col, moves, true);
-}
-
-function getPawnMoves(row, col, color) {
-    const direction = color === 'white' ? -1 : 1;
     const moves = [];
-    if (board[row + direction] && !board[row + direction][col]) {
-        moves.push([row + direction, col]);
-    }
-    if (board[row + direction] && board[row + direction][col - 1] && board[row + direction][col - 1].split('_')[0] !== color) {
-        moves.push([row + direction, col - 1]);
-    }
-    if (board[row + direction] && board[row + direction][col + 1] && board[row + direction][col + 1].split('_')[0] !== color) {
-        moves.push([row + direction, col + 1]);
-    }
-    return moves;
-}
-
-function getStraightMoves(row, col, directions) {
-    const moves = [];
-    directions.forEach(([dRow, dCol]) => {
-        let r = row + dRow;
-        let c = col + dCol;
-        while (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
-            if (board[r][c] === null) {
-                moves.push([r, c]);
+    if (type === 'pawn') {
+        directions['pawn'].forEach(([dr, dc]) => {
+            const newRow = row + dr;
+            const newCol = col + dc;
+            if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
+                if (dr === 0 && !board[newRow][newCol]) {
+                    moves.push([newRow, newCol]);
+                } else if (dr !== 0 && board[newRow][newCol] && board[newRow][newCol].split('_')[0] !== color) {
+                    moves.push([newRow, newCol]);
+                }
             }
-            r += dRow;
-            c += dCol;
-        }
-    });
+        });
+    } else {
+        directions[type].forEach(([dr, dc]) => {
+            for (let i = 1; i < boardSize; i++) {
+                const newRow = row + dr * i;
+                const newCol = col + dc * i;
+                if (newRow < 0 || newRow >= boardSize || newCol < 0 || newCol >= boardSize) break;
+                if (board[newRow][newCol]) {
+                    if (board[newRow][newCol].split('_')[0] !== color) {
+                        moves.push([newRow, newCol]);
+                    }
+                    break;
+                }
+                moves.push([newRow, newCol]);
+            }
+        });
+    }
+    if (type === 'king' || type === 'knight') {
+        return moves.filter(([r, c]) => !board[r][c] || board[r][c].split('_')[0] !== color);
+    }
     return moves;
-}
+};
 
-function getValidMovesFromOffsets(row, col, offsets, singleStep = false) {
-    const moves = [];
-    offsets.forEach(([dRow, dCol]) => {
-        const r = row + dRow;
-        const c = col + dCol;
-        if (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
-            if (board[r][c] === null || board[r][c].split('_')[0] !== board[row][col].split('_')[0]) {
-                moves.push([r, c]);
+const animateMoves = (whiteMove, blackMove) => {
+    const maxTime = Math.max(whiteMove.time, blackMove.time);
+    let currentTime = 0;
+
+    const interval = setInterval(() => {
+        if (currentTime === maxTime) {
+            clearInterval(interval);
+            drawBoard();
+            checkCollision();
+            return;
+        }
+
+        drawBoard();
+        if (currentTime < whiteMove.time) {
+            const [startRow, startCol, endRow, endCol] = whiteMove.path[currentTime];
+            ctx.drawImage(images[board[startRow][startCol]], endCol * tileSize, endRow * tileSize, tileSize, tileSize);
+        }
+        if (currentTime < blackMove.time) {
+            const [startRow, startCol, endRow, endCol] = blackMove.path[currentTime];
+            ctx.drawImage(images[board[startRow][startCol]], endCol * tileSize, endRow * tileSize, tileSize, tileSize);
+        }
+        currentTime++;
+    }, 1000);
+};
+
+const checkCollision = () => {
+    for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+            if (board[row][col] && board[row][col].includes('white') && board[row][col].includes('black')) {
+                setTimeout(() => {
+                    board[row][col] = null;
+                    drawBoard();
+                }, 1000);
             }
         }
-    });
-    return moves;
-}
+    }
+};
 
 canvas.addEventListener('click', (event) => {
     const rect = canvas.getBoundingClientRect();
@@ -171,12 +154,20 @@ canvas.addEventListener('click', (event) => {
 
     if (selectedPiece) {
         if (validMoves.some(([r, c]) => r === row && c === col)) {
-            board[row][col] = board[selectedPiece[0]][selectedPiece[1]];
+            const piece = board[selectedPiece[0]][selectedPiece[1]];
             board[selectedPiece[0]][selectedPiece[1]] = null;
+            board[row][col] = piece;
+
+            const whiteMove = {
+                path: calculatePath(selectedPiece, [row, col]),
+                time: calculateTime(selectedPiece, [row, col])
+            };
+
             selectedPiece = null;
             validMoves = [];
             checkGameOver();
-            blackMove();
+            const blackMove = blackMoveDecision();
+            animateMoves(whiteMove, blackMove);
         } else {
             selectedPiece = null;
             validMoves = [];
@@ -191,41 +182,77 @@ canvas.addEventListener('click', (event) => {
     drawBoard();
 });
 
-function checkGameOver() {
-    const kings = board.flat().filter(piece => piece && piece.endsWith('_king'));
-    if (kings.length === 1) {
-        setTimeout(() => {
-            alert(kings[0].startsWith('white') ? 'You win!' : 'You lose!');
-            board = JSON.parse(JSON.stringify(initialBoard));
-            selectedPiece = null;
-            validMoves = [];
-            drawBoard();
-        }, 100);
-    }
-}
+const calculatePath = (start, end) => {
+    const path = [];
+    const [startRow, startCol] = start;
+    const [endRow, endCol] = end;
+    const rowDiff = endRow - startRow;
+    const colDiff = endCol - startCol;
 
-function blackMove() {
-    const blackPieces = [];
+    const rowStep = rowDiff === 0 ? 0 : rowDiff / Math.abs(rowDiff);
+    const colStep = colDiff === 0 ? 0 : colDiff / Math.abs(colDiff);
+
+    for (let i = 1; i <= Math.max(Math.abs(rowDiff), Math.abs(colDiff)); i++) {
+        path.push([startRow + i * rowStep, startCol + i * colStep, endRow, endCol]);
+    }
+    return path;
+};
+
+const calculateTime = (start, end) => {
+    const [startRow, startCol] = start;
+    const [endRow, endCol] = end;
+    const rowDiff = Math.abs(endRow - startRow);
+    const colDiff = Math.abs(endCol - startCol);
+
+    return Math.max(rowDiff, colDiff);
+};
+
+const blackMoveDecision = () => {
+    const moves = [];
     for (let row = 0; row < boardSize; row++) {
         for (let col = 0; col < boardSize; col++) {
             if (board[row][col] && board[row][col].startsWith('black')) {
-                blackPieces.push([row, col]);
+                const validMoves = getValidMoves(row, col);
+                validMoves.forEach(move => {
+                    moves.push([[row, col], move]);
+                });
             }
         }
     }
-
-    if (blackPieces.length === 0) return;
-
-    const randomPiece = blackPieces[Math.floor(Math.random() * blackPieces.length)];
-    const moves = getValidMoves(randomPiece[0], randomPiece[1]);
-    if (moves.length === 0) return;
-
     const randomMove = moves[Math.floor(Math.random() * moves.length)];
-    board[randomMove[0]][randomMove[1]] = board[randomPiece[0]][randomPiece[1]];
-    board[randomPiece[0]][randomPiece[1]] = null;
-    checkGameOver();
+    const [start, end] = randomMove;
+    const path = calculatePath(start, end);
+    const time = calculateTime(start, end);
+
+    return { path, time };
+};
+
+const checkGameOver = () => {
+    let whiteKing = false;
+    let blackKing = false;
+
+    for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+            if (board[row][col] === 'white_king') whiteKing = true;
+            if (board[row][col] === 'black_king') blackKing = true;
+        }
+    }
+
+    if (!whiteKing) {
+        alert("Black wins!");
+        resetGame();
+    } else if (!blackKing) {
+        alert("White wins!");
+        resetGame();
+    }
+};
+
+const resetGame = () => {
+    board = JSON.parse(JSON.stringify(initialBoard));
+    selectedPiece = null;
+    validMoves = [];
     drawBoard();
-}
+};
 
 loadImages().then(() => {
     drawBoard();
