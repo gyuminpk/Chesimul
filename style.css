@@ -1,16 +1,23 @@
 body {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    background-color: #f0f0f0;
+    height: 100vh;
+    background-color: #ececec;
+    margin: 0;
     font-family: Arial, sans-serif;
 }
 
-h1 {
-    margin-top: 20px;
+#container {
+    text-align: center;
 }
 
 canvas {
-    border: 1px solid #000;
-    margin-top: 20px;
+    border: 2px solid #333;
+}
+
+#phase {
+    margin-top: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
 }
