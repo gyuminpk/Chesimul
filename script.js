@@ -309,8 +309,8 @@ const animateMoves = (whiteMove, blackMove, callback) => {
     const totalSteps = Math.max(whiteTotalSteps, blackTotalSteps);
 
     const interval = setInterval(() => {
-        var whiteCheck = 0;
-        var blackCheck = 0;
+        let whiteCheck = false;
+        let blackCheck = false;
 
         if (currentStep == totalSteps) {
             clearInterval(interval);
@@ -321,21 +321,23 @@ const animateMoves = (whiteMove, blackMove, callback) => {
                 board[whiteStartRow][whiteStartCol] = null;
                 whiteStartRow += whiteRowStep;
                 whiteStartCol += whiteColStep;
-                whiteCheck = 1;
+                whiteCheck = true;
             }
             if (currentStep < blackTotalSteps) {
                 board[blackStartRow][blackStartCol] = null;
                 blackStartRow += blackRowStep;
                 blackStartCol += blackColStep;
-                blackCheck = 1;
+                blackCheck = true;
             }
         }
 
-        if (whiteCheck == 1 && blackCheck == 1) {
+        if (whiteCheck && blackCheck) {
             if (Math.round(whiteStartRow) === Math.round(blackStartRow) && Math.round(whiteStartCol) === Math.round(blackStartCol)) {
-                // 두 기물이 같은 위치에 도달하면 서로 제거
+                // 두 말이 같은 위치에 도달하면 서로 제거
                 board[Math.round(whiteStartRow)][Math.round(whiteStartCol)] = null;
                 clearInterval(interval); // 충돌 시 이동 멈춤
+                callback();
+                return;
             } else {
                 if (board[Math.round(whiteStartRow)][Math.round(whiteStartCol)] && board[Math.round(whiteStartRow)][Math.round(whiteStartCol)].split('_')[0] !== whitePiece.split('_')[0]) {
                     whiteTotalSteps = currentStep + 1;
@@ -346,12 +348,12 @@ const animateMoves = (whiteMove, blackMove, callback) => {
                 board[Math.round(whiteStartRow)][Math.round(whiteStartCol)] = whitePiece;
                 board[Math.round(blackStartRow)][Math.round(blackStartCol)] = blackPiece;
             }
-        } else if (whiteCheck == 1 && blackCheck == 0) {
+        } else if (whiteCheck && !blackCheck) {
             if (board[Math.round(whiteStartRow)][Math.round(whiteStartCol)] && board[Math.round(whiteStartRow)][Math.round(whiteStartCol)].split('_')[0] !== whitePiece.split('_')[0]) {
                 whiteTotalSteps = currentStep + 1;
             }
             board[Math.round(whiteStartRow)][Math.round(whiteStartCol)] = whitePiece;
-        } else if (whiteCheck == 0 && blackCheck == 1) {
+        } else if (!whiteCheck && blackCheck) {
             if (board[Math.round(blackStartRow)][Math.round(blackStartCol)] && board[Math.round(blackStartRow)][Math.round(blackStartCol)].split('_')[0] !== blackPiece.split('_')[0]) {
                 blackTotalSteps = currentStep + 1;
             }
@@ -362,6 +364,7 @@ const animateMoves = (whiteMove, blackMove, callback) => {
         currentStep += 1;
     }, 1000); // move after 1 second
 };
+
 
 const highlightMoves = (whiteMove, blackMove) => {
     drawBoard();
