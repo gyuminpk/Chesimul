@@ -358,6 +358,7 @@ const completeMoves = () => {
                 drawBoard();
                 checkGameOver();
                 moveSelection = { white: null, black: null };
+                drawSelectBoard();
                 phase = 'move_selection';
                 phaseText.textContent = 'move_selection';
                 return;
