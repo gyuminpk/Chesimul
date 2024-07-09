@@ -346,6 +346,17 @@ const completeMoves = () => {
             const blackPiece = board[blackStartRow][blackStartCol];
 
             // 나이트 즉시 이동 처리
+            if (whitePiece.endsWith('king')) {
+                board[whiteStartRow][whiteStartCol] = null;
+                    board[whiteEndRow][whiteEndCol] = whitePiece;
+                    moveSelection.white = null;
+            }
+            if (blackPiece.endsWith('king') {
+                board[blackStartRow][blackStartCol] = null;
+                    board[blackEndRow][blackEndCol] = blackPiece;
+                    moveSelection.black = null;
+            }
+            
             if (whitePiece.endsWith('knight') && blackPiece.endsWith('knight')) {
                 board[whiteStartRow][whiteStartCol] = null;
                 board[blackStartRow][blackStartCol] = null;
