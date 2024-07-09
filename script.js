@@ -351,7 +351,7 @@ const completeMoves = () => {
                     board[whiteEndRow][whiteEndCol] = whitePiece;
                     moveSelection.white = null;
             }
-            if (blackPiece.endsWith('king') {
+            if (blackPiece.endsWith('king')) {
                 board[blackStartRow][blackStartCol] = null;
                     board[blackEndRow][blackEndCol] = blackPiece;
                     moveSelection.black = null;
