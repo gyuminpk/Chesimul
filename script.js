@@ -84,6 +84,19 @@ const drawBoard = () => {
     }
 };
 
+const drawSelectBoard = () => {
+    for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+            ctx.fillStyle = (row + col) % 2 === 0 ? '#f0d9b5' : '#b58863';
+            ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+            if (board[row][col]) {
+                ctx.drawImage(images[board[row][col]], col * tileSize, row * tileSize, tileSize, tileSize);
+            }
+        }
+    }
+};
+
+
 const getPiece = (row, col) => {
     return board[row][col];
 };
@@ -383,6 +396,7 @@ const completeMoves = () => {
                         drawBoard();
                         checkGameOver();
                         moveSelection = { white: null, black: null };
+                        drawSelectBoard();
                         phase = 'move_selection';
                         phaseText.textContent = 'move_selection';
                     });
