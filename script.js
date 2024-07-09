@@ -181,7 +181,7 @@ canvas.addEventListener('click', (event) => {
 
                 setTimeout(() => {
                     completeMoves();
-                }, 1000); // 1초 대기 후 이동
+                }, 1); // 1초 대기 후 이동
             } else {
                 selectedPiece = null;
                 validMoves = [];
@@ -303,7 +303,7 @@ const animateMoves = (whiteMove, blackMove, callback) => {
 
         drawBoard();
         currentStep += 1;
-    }, 1000); // move after 1 second
+    }, 1); // move after 1 second
 };
 
 
@@ -413,8 +413,8 @@ const completeMoves = () => {
                         phaseText.textContent = 'move_selection';
                     });
                 }
-            }, 1000); // 1초 대기 후 이동 시작
-        }, 1000); // 1초 대기 후 선택 표시
+            }, 1); // 1초 대기 후 이동 시작
+        }, 1); // 1초 대기 후 선택 표시
     }
 };
 
