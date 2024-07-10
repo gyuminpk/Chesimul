@@ -350,11 +350,17 @@ const completeMoves = () => {
                 board[whiteStartRow][whiteStartCol] = null;
                     board[whiteEndRow][whiteEndCol] = whitePiece;
                     moveSelection.white = null;
+                    if (whiteEndRow === blackStartRow && whiteEndCol === blackStartCol) {
+                        moveSelection.black = null;
+                    }
             }
             if (blackPiece.endsWith('king')) {
                 board[blackStartRow][blackStartCol] = null;
                     board[blackEndRow][blackEndCol] = blackPiece;
                     moveSelection.black = null;
+                    if (blackEndRow === whiteStartRow && blackEndCol === whiteStartCol) {
+                        moveSelection.white = null;
+                    }
             }
             
             if (whitePiece.endsWith('knight') && blackPiece.endsWith('knight')) {
@@ -378,11 +384,17 @@ const completeMoves = () => {
                     board[whiteStartRow][whiteStartCol] = null;
                     board[whiteEndRow][whiteEndCol] = whitePiece;
                     moveSelection.white = null;
+                    if (whiteEndRow === blackStartRow && whiteEndCol === blackStartCol) {
+                        moveSelection.black = null;
+                    }
                 }
                 if (blackPiece.endsWith('knight')) {
                     board[blackStartRow][blackStartCol] = null;
                     board[blackEndRow][blackEndCol] = blackPiece;
                     moveSelection.black = null;
+                    if (blackEndRow === whiteStartRow && blackEndCol === whiteStartCol) {
+                        moveSelection.white = null;
+                    }
                 }
             }
 
@@ -394,6 +406,7 @@ const completeMoves = () => {
                 if (!moveSelection.white && !moveSelection.black) {
                     checkGameOver();
                     moveSelection = { white: null, black: null };
+                    drawSelectBoard();
                     phase = 'move_selection';
                     phaseText.textContent = 'move_selection';
                 } else {
