@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // AI model paths
     const models = {
         intermediate: "assets/black_model_intermediate.onnx",
-        god: "assets/black_model_intermediate.onnx"
+        god: "assets/black_model_god.onnx"
     };
 
     let currentModel = models.intermediate; // Set the default model
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sumExps = exps.reduce((a, b) => a + b, 0);
             return exps.map((exp) => exp / sumExps);
         };
-    
+       
         const softmaxProbabilities = softmax(probabilities);
     
         // Select a move based on the softmax probabilities
@@ -142,10 +142,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const randomValue = Math.random();
             return cumulativeProbs.findIndex((cumProb) => randomValue < cumProb);
         };
-    
+        
         do {
             // Get the index based on the probabilities
             moveIndex = sampleIndexFromProbabilities(softmaxProbabilities);
+            console.log(softmaxProbabilities)
+            console.log(moveIndex)
             if (moveIndex === -1) {
                 console.error("No valid move found. Check the softmax probabilities and board state.");
                 return null;
@@ -158,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             endY = moveIndex % 5;
     
             softmaxProbabilities[moveIndex] = 0; // Invalidate the probability to avoid reselection
-    
+            console.log(boardState[startX][startY], isValidMove(boardState, startX, startY, endX, endY), piece)
         } while (boardState[startX][startY] === null || !boardState[startX][startY].startsWith('black') || !isValidMove(boardState, startX, startY, endX, endY) || piece < 7);
     
         console.log(outputTensor);
