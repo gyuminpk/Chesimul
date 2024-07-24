@@ -112,14 +112,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Access the 'policy' output tensor
         const outputTensor = outputMap.get('policy'); // Get the output named 'policy'
     
-        // Find a valid move
+        // Convert the tensor data to a flat array of probabilities
+        const probabilities = Array.from(outputTensor.data);
+    
+        // Apply softmax to convert logits to probabilities
+        const softmax = (logits) => {
+            const maxLogit = Math.max(...logits);
+            const exps = logits.map((logit) => Math.exp(logit - maxLogit));
+            const sumExps = exps.reduce((a, b) => a + b, 0);
+            return exps.map((exp) => exp / sumExps);
+        };
+    
+        const softmaxProbabilities = softmax(probabilities);
+    
+        // Select a move based on the softmax probabilities
         let moveIndex = -1;
         let piece, startX, startY, endX, endY;
-        const probabilities = Object.values(outputTensor.data);
+    
+        const sampleIndexFromProbabilities = (probs) => {
+            const cumulativeProbs = probs.reduce((acc, prob, i) => {
+                if (i === 0) {
+                    acc.push(prob);
+                } else {
+                    acc.push(acc[acc.length - 1] + prob);
+                }
+                return acc;
+            }, []);
+    
+            const randomValue = Math.random();
+            return cumulativeProbs.findIndex((cumProb) => randomValue < cumProb);
+        };
     
         do {
-            // Get the index of the maximum value in the output tensor
-            moveIndex = probabilities.indexOf(Math.max(...probabilities));
+            // Get the index based on the probabilities
+            moveIndex = sampleIndexFromProbabilities(softmaxProbabilities);
+            if (moveIndex === -1) {
+                console.error("No valid move found. Check the softmax probabilities and board state.");
+                return null;
+            }
             // Convert the index to coordinates
             piece = Math.floor(moveIndex / (5 * 5 * 5 * 5));
             startX = Math.floor((moveIndex % (5 * 5 * 5 * 5)) / (5 * 5 * 5));
@@ -127,9 +157,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             endX = Math.floor((moveIndex % (5 * 5)) / 5);
             endY = moveIndex % 5;
     
-            probabilities[moveIndex] = -Infinity; // Invalidate the maximum value to find the next one
+            softmaxProbabilities[moveIndex] = 0; // Invalidate the probability to avoid reselection
     
-        } while (boardState[startX][startY] === null || !boardState[startX][startY].startsWith('black') || !isValidMove(boardState, startX, startY, endX, endY));
+        } while (boardState[startX][startY] === null || !boardState[startX][startY].startsWith('black') || !isValidMove(boardState, startX, startY, endX, endY) || piece < 7);
     
         console.log(outputTensor);
         console.log(moveIndex);
@@ -636,6 +666,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (moveSelection.white) {
                 const [startRow, startCol] = moveSelection.white.start;
                 const [endRow, endCol] = moveSelection.white.end;
+                console.log(startRow, startCol, endRow, endCol)
                 ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
                 ctx.fillRect(startCol * tileSize, startRow * tileSize, tileSize, tileSize);
                 ctx.fillStyle = 'rgba(0, 191, 255, 0.5)';
