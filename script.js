@@ -146,8 +146,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         do {
             // Get the index based on the probabilities
             moveIndex = sampleIndexFromProbabilities(softmaxProbabilities);
-            console.log(softmaxProbabilities)
-            console.log(moveIndex)
             if (moveIndex === -1) {
                 console.error("No valid move found. Check the softmax probabilities and board state.");
                 return null;
@@ -160,16 +158,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             endY = moveIndex % 5;
     
             softmaxProbabilities[moveIndex] = 0; // Invalidate the probability to avoid reselection
-            console.log(boardState[startX][startY], isValidMove(boardState, startX, startY, endX, endY), piece)
         } while (boardState[startX][startY] === null || !boardState[startX][startY].startsWith('black') || !isValidMove(boardState, startX, startY, endX, endY) || piece < 7);
-    
-        console.log(outputTensor);
-        console.log(moveIndex);
-        console.log(piece, startX, startY, endX, endY);
         
         // Decode the move to a string and return it
         return decodeMove(startX, startY, endX, endY);
     };
+    
     
     // Define startSelfGame
     const startSelfGame = () => {
