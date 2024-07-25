@@ -83,8 +83,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const newRow = row + dr * i;
                     const newCol = col + dc * i;
                     if (newRow < 0 || newRow >= board.length || newCol < 0 || newCol >= board[0].length) break;
-                    if (board[newRow][newCol] && board[newRow][newCol].split('_')[0] === color) break; // 내 기물이 있으면 중단
-                    moves.push([newRow, newCol]); // 모든 칸을 추가
+                    if (board[newRow][newCol] && board[newRow][newCol].split('_')[0] === color) break; // break if there are my pieces
+                    moves.push([newRow, newCol]);
                     i++;
                 }
             });
@@ -111,10 +111,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         // Access the 'policy' output tensor
         const outputTensor = outputMap.get('policy'); // Get the output named 'policy'
-    
+        
         // Convert the tensor data to a flat array of probabilities
         const probabilities = Array.from(outputTensor.data);
-    
+        
         // Apply softmax to convert logits to probabilities
         const softmax = (logits) => {
             const maxLogit = Math.max(...logits);
@@ -125,10 +125,34 @@ document.addEventListener('DOMContentLoaded', async () => {
        
         const softmaxProbabilities = softmax(probabilities);
     
-        // Select a move based on the softmax probabilities
-        let moveIndex = -1;
-        let piece, startX, startY, endX, endY;
+        // Filter valid moves and corresponding probabilities
+        const validMoves = [];
+        const validProbabilities = [];
     
+        softmaxProbabilities.forEach((prob, index) => {
+            const piece = Math.floor(index / (5 * 5 * 5 * 5));
+            const startX = Math.floor((index % (5 * 5 * 5 * 5)) / (5 * 5 * 5));
+            const startY = Math.floor((index % (5 * 5 * 5)) / (5 * 5));
+            const endX = Math.floor((index % (5 * 5)) / 5);
+            const endY = index % 5;
+    
+            if (boardState[startX][startY] && boardState[startX][startY].startsWith('black') && isValidMove(boardState, startX, startY, endX, endY) && piece >= 7) {
+                validMoves.push({ piece, startX, startY, endX, endY });
+                validProbabilities.push(prob);
+            }
+        });
+    
+        if (validMoves.length === 0) {
+            console.error("No valid move found. Check the board state.");
+            alert("Black wins!");
+            resetGame();
+        }
+    
+        // Normalize valid probabilities
+        const totalProb = validProbabilities.reduce((sum, prob) => sum + prob, 0);
+        const normalizedProbabilities = validProbabilities.map(prob => prob / totalProb);
+    
+        // Select a move based on the normalized probabilities
         const sampleIndexFromProbabilities = (probs) => {
             const cumulativeProbs = probs.reduce((acc, prob, i) => {
                 if (i === 0) {
@@ -142,26 +166,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const randomValue = Math.random();
             return cumulativeProbs.findIndex((cumProb) => randomValue < cumProb);
         };
-        
-        do {
-            // Get the index based on the probabilities
-            moveIndex = sampleIndexFromProbabilities(softmaxProbabilities);
-            if (moveIndex === -1) {
-                console.error("No valid move found. Check the softmax probabilities and board state.");
-                return null;
-            }
-            // Convert the index to coordinates
-            piece = Math.floor(moveIndex / (5 * 5 * 5 * 5));
-            startX = Math.floor((moveIndex % (5 * 5 * 5 * 5)) / (5 * 5 * 5));
-            startY = Math.floor((moveIndex % (5 * 5 * 5)) / (5 * 5));
-            endX = Math.floor((moveIndex % (5 * 5)) / 5);
-            endY = moveIndex % 5;
     
-            softmaxProbabilities[moveIndex] = 0; // Invalidate the probability to avoid reselection
-        } while (boardState[startX][startY] === null || !boardState[startX][startY].startsWith('black') || !isValidMove(boardState, startX, startY, endX, endY) || piece < 7);
-        
+        const moveIndex = sampleIndexFromProbabilities(normalizedProbabilities);
+        const selectedMove = validMoves[moveIndex];
+    
         // Decode the move to a string and return it
-        return decodeMove(startX, startY, endX, endY);
+        return decodeMove(selectedMove.startX, selectedMove.startY, selectedMove.endX, selectedMove.endY);
     };
     
     
