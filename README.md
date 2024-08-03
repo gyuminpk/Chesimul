@@ -1,7 +1,7 @@
 # Custom Chess Game
 
 This is a custom chess game where both white and black players move simultaneously. I named this as 'Chesimul' (chess + simulator or chess + simultaneous)
-I wrote the rules below. But It is more like the results of the debugging than the official rule book. So if you don't have time or hate reading, just play the game against your self or remember only this. Kings move first, kinghts second, and other pieces move simultaneously with the same speed.
+I wrote the rules below. But It is more like the results of the debugging than the official rule book. So if you don't have time or hate reading, just play the game against your self or remember only this. Kings move first, kinghts second, and other pieces move simultaneously with the same speed. [Game Link](https://gyuminpk.github.io/Chesimul/)
 
 ## General Rules
 
