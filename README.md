@@ -31,3 +31,7 @@ I wrote the rules below. But It is more like the results of the debugging than t
 - If you and your opponent's king are eliminated from the board at the same time, you draw.
 - If there are no pieces but kings, you draw.
 
+## AI model
+- All AI models are trained with MCTS, Q-learning.
+- intermediate - 500 games / god - 5000 games
+
